@@ -1,0 +1,16 @@
+[package]
+name = "rails-cookies-monster"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hyper = "0.14"
+hyper-util = "0.1.10"
+hyperlocal = "0.9.1"
+http-body-util = "0.1.2"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.137"
+
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+lazy_static = "1.4"
