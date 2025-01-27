@@ -52,7 +52,7 @@ async fn main() {
 
   println!("\n********************************************************************************");
   println!("***** 1. Set up Docker image ***************************************************");
-  if docker::exists(&image_tag).await {
+  if docker::image_exists(&image_tag).await {
     println!("-> Image already exists, skipping.");
   } else {
     println!("-> Image does not exist, building.");
@@ -117,7 +117,7 @@ async fn main() {
     .map(|(key, val)| return (key.to_owned(), decode(val).unwrap().to_string()))
     .collect();
   println!("-> Extracted {} cookies", cookies.len());
-  
+
   println!("\n********************************************************************************");
   println!("***** 4. Cleaning up container *************************************************");
   let _stop_output = Command::new("docker")
