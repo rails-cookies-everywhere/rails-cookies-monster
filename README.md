@@ -10,27 +10,32 @@ These cookies were built with the following environment variables:
 ENV SECRET_KEY_BASE="rails-cookies-everywhere"
 ENV CANARY_VALUE="correct-horse-battery-staple"
 ```
-
 The `CANARY_VALUE` is the string you must find after decrypting the cookies.
 
 # Rust test suite launcher
 
-Currently, the rails-cookie-monster binary:
+Currently, the rails-cookie-monster binary's to-do list:
 - [x] Takes a single version as argument (format: `MAJOR.MINOR.PATCH`).
 - [x] Checks if the docker image exists to avoid rebuilding it.
 - [x] Build the associated docker image (needs to have the `rails-base` image as a base).
 - [x] Runs the docker image and prints the cookies.
-
-To-do list:
 - [ ] Accept multiple versions in input and process them in parallel.
 - [ ] Use the Docker socket to build the images instead of CLI.
 - [ ] Use the Docker socket to run the container.
-- [ ] Do something with the cookies, either pass them to a FFI or a binary?
+- [x] Pass the cookies to a [rust cookies parser library](https://github.com/rails-cookies-everywhere/rails-cookies-rust).
+- [x] Check the cookie against the canary value.
+- [ ] Do more with the cookies, either pass them to a FFI or a binary?
 
 Type of commands I'd like to support later:
 ```shell
 $ rcm --versions 8.*,^7.1 --test-command 'bun input-for-my-lib-in-js.js'
 $ LD_PRELOAD=compiled_from_zig.so rcm --static --versions '*'
+```
+
+# Current automated stuff you can do:
+
+```shell
+SECRET_KEY_BASE=rails-cookies-all-around CANARY_VALUE="you must find this string in the decoded cookie" cargo run 8.0.0
 ```
 
 # Current HOWTO before automatization

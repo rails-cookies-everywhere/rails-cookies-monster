@@ -2,8 +2,8 @@ use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
 use hyper_util::client::legacy::Client;
 use hyperlocal::{UnixClientExt, UnixConnector, Uri};
-use std::error::Error;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DockerImage {
@@ -32,10 +32,10 @@ impl DockerClient {
     let mut response = self.client.get(url).await?;
     let mut result: String = String::new();
     while let Some(frame_result) = response.frame().await {
-        let frame = frame_result?;
-        if let Some(segment) = frame.data_ref() {
-            result.push_str(std::str::from_utf8(segment).unwrap());
-        }
+      let frame = frame_result?;
+      if let Some(segment) = frame.data_ref() {
+        result.push_str(std::str::from_utf8(segment).unwrap());
+      }
     }
     Ok(result)
   }

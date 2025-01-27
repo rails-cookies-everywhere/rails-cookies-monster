@@ -1,0 +1,45 @@
+edition = "2015"
+
+# Who are we kidding here?
+tab_spaces = 2
+hard_tabs = false
+
+# My OCD is here to stay.
+reorder_imports = true
+reorder_modules = true
+
+# Arrays should always be on the next line
+array_width = 20
+# >The width threshold for an array element to be considered "short".
+# >https://rust-lang.github.io/rustfmt/?version=v1.6.0&search=#short_array_element_width_threshold
+short_array_element_width_threshold = 3
+
+# >Put single-expression functions on a single line
+# >https://rust-lang.github.io/rustfmt/?version=v1.6.0&search=#fn_single_line
+# fn_single_line = true
+
+# >Format code snippet included in doc comments.
+# >https://rust-lang.github.io/rustfmt/?version=v1.6.0&search=#format_code_in_doc_comments
+# format_code_in_doc_comments = true
+
+
+
+# max_width = 100
+# newline_style = "Auto"
+# use_small_heuristics = "Default"
+# fn_call_width = 60
+# attr_fn_like_width = 70
+# struct_lit_width = 18
+# struct_variant_width = 35
+
+# chain_width = 60
+# single_line_if_else_max_width = 50
+# single_line_let_else_max_width = 50
+# remove_nested_parens = true
+# match_arm_leading_pipes = "Never"
+# fn_params_layout = "Tall"
+# match_block_trailing_comma = false
+# merge_derives = true
+# use_try_shorthand = false
+# use_field_init_shorthand = false
+# force_explicit_abi = true
