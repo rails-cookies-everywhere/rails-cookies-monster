@@ -4,6 +4,8 @@ use rails_cookie_parser::ParseCookieError;
 use rails_cookie_parser::RailsCookieParser;
 use serde::{Deserialize, Serialize};
 
+pub mod versions;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RailsMessage {
   #[serde(rename = "message")]

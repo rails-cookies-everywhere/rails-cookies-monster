@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use lazy_static::lazy_static;
 use std::env;
 use std::process::Command;
@@ -37,8 +38,8 @@ async fn main() {
     eprintln!("Usage: {} <RAILS_VERSION_TAG>", args[0]);
     std::process::exit(1);
   }
+  
   // env_logger::init();
-
   println!("********************************************************************************");
   println!("***** 0. Setup *****************************************************************");
   println!(
@@ -46,34 +47,44 @@ async fn main() {
     *SECRET_KEY_BASE, *CANARY_VALUE
   );
   let rails_version_tag = &args[1];
-  let image_tag = format!("rails:v{}", rails_version_tag);
-  println!(
-    "-> VERSION: {:?}\n-> IMAGE: {:?}",
-    rails_version_tag, image_tag
-  );
+  let Ok(rails_req) = semver::VersionReq::parse(&args[1]) else {
+    eprintln!("Error: Cannot parse version requirement: {}", args[0]);
+    std::process::exit(1);
+  };
+  let rails_versions = rails::versions::match_versions(&rails_req);
+  println!("-> VERSIONS: {:?}", rails_versions);
+
   if docker::image_exists("rails-cookies-everywhere:rails-base").await {
     println!("-> Base image already exists, skipping.");
   } else {
     println!("-> Base image does not exist, building.");
-    if let Err(build_output) = docker::build("rails-base:latest").await {
+    if let Err(build_output) = docker::build("rails-base").await {
       eprintln!("Docker: Failed to build rails-cookies-everywhere:rails-base");
       eprintln!("- Full error:\n {:?}", build_output);
       std::process::exit(1);
     }
   }
 
+  let image_tag = format!("rails:v{}", rails_version_tag);
+  println!(
+    "-> VERSION: {:?}\n-> IMAGE: {:?}",
+    rails_version_tag, image_tag
+  );
+
+
+
   println!("\n********************************************************************************");
   println!("***** 1. Set up Docker image ***************************************************");
-  if docker::image_exists(&image_tag).await {
-    println!("-> Image already exists, skipping.");
-  } else {
-    println!("-> Image does not exist, building.");
-    if let Err(build_output) = docker::build(rails_version_tag).await {
-      eprintln!("Docker: Failed to build rails:v{}", rails_version_tag);
-      eprintln!("- Full error:\n {:?}", build_output);
-      std::process::exit(1);
+  for version in rails_versions {
+    if docker::image_exists(&format!("rails-cookies-everywhere:rails-v{}", version)).await {
+      println!("-> Image rails-cookies-everywhere:rails-v{} exists, skipping", version);
     } else {
-      println!("-> Docker: Built rails:v{}", rails_version_tag);
+      println!("-> Image rails-cookies-everywhere:rails-v{} does not exist, building...", version);
+      if let Err(build_output) = docker::build(&version).await {
+        eprintln!("Docker: Failed to build rails-cookies-everywhere:rails-v{}", version);
+        eprintln!("- Full error:\n {:?}", build_output);
+        std::process::exit(1);
+      }
     }
   }
 

@@ -1,41 +1,51 @@
 use lazy_static::lazy_static;
-use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use std::error::Error;
-
-use bollard::image::ListImagesOptions;
-use bollard::Docker;
+use dockworker::Docker;
 
 mod build;
 
 lazy_static! {
   pub static ref DOCKER: Arc<Mutex<Docker>> =
-    Arc::new(Mutex::new(Docker::connect_with_unix_defaults().unwrap()));
+    Arc::new(Mutex::new(Docker::connect_with_defaults().unwrap()));
 }
 
 pub async fn image_exists(image_tag: &str) -> bool {
-  let image = format!("rails_cookies_everywhere={}", image_tag);
-  let list_images_opts = ListImagesOptions::<String> {
-    all: true,
-    filters: HashMap::from([("label".to_string(), Vec::from([image]))]),
-    ..Default::default()
-  };
-  !DOCKER
-    .lock()
-    .await
-    .list_images(Some(list_images_opts))
-    .await
-    .unwrap()
-    .is_empty()
+  DOCKER.
+    lock().
+    await.
+    images(true).
+    await.
+    unwrap().
+    iter().
+    any(|image| {
+      image.RepoTags.iter().any(|tag| tag == image_tag)
+    })
+  //   for_each(|image| {
+  //     println!("{:?}", image);
+  //   });
+  // false
+  // let image = format!("rails-cookies-everywhere={}", image_tag);
+  // let list_images_opts = ListImagesOptions::<String> {
+  //   all: true,
+  //   filters: HashMap::from([("label".to_string(), Vec::from([image]))]),
+  //   ..Default::default()
+  // };
+  // !DOCKER
+  //   .lock()
+  //   .await
+  //   .list_images(Some(list_images_opts))
+  //   .await
+  //   .unwrap()
+  //   .is_empty()
 }
 
-pub async fn build(image_tag: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
-  match image_tag {
-    "rails-base" => { },
-    _ => {}
+pub async fn build(image_tag: &str) -> Result<(), dockworker::errors::Error> {
+  if image_tag == "rails-base" {
+    build::build_base().await
+  } else {
+    build::build_version(image_tag).await
   }
-  Ok(())
   // let image_tag = format!("rails:v{}", rails_version_tag);
   // let Ok(mut current_dir) = std::env::current_dir() else {
   //   return Err("Could not get current directory".into());

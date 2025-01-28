@@ -1,6 +1,7 @@
 # Dockerfile.base
 FROM ruby:latest
-LABEL rails_cookies_everywhere=rails-base:latest
+LABEL rails-cookies=everywhere
+LABEL rails-cookies-everywhere=rails-base:latest
 
 # Install dependencies
 RUN apt-get update -qq && apt-get install -y nodejs git

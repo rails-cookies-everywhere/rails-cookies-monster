@@ -2,9 +2,10 @@
 
 # Dockerfile
 # Stage 1: Build rails
-FROM rails_cookies_everywhere:rails-base AS build-rails
+FROM rails-cookies-everywhere:rails-base AS build-rails
 ARG RAILS_VERSION_TAG
-LABEL rails_cookies_everywhere=rails:v$RAILS_VERSION_TAG
+LABEL rails-cookies=everywhere
+LABEL rails-cookies-everywhere=rails:v$RAILS_VERSION_TAG
 WORKDIR /rails
 
 RUN git checkout v$RAILS_VERSION_TAG
