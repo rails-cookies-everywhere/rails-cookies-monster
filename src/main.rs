@@ -4,6 +4,7 @@ use std::process::Command;
 use tokio::task;
 use tokio::time::Duration;
 use urlencoding::decode;
+// use log::{debug, error, log_enabled, info, Level};
 
 mod docker;
 mod rails;
@@ -36,6 +37,7 @@ async fn main() {
     eprintln!("Usage: {} <RAILS_VERSION_TAG>", args[0]);
     std::process::exit(1);
   }
+  // env_logger::init();
 
   println!("********************************************************************************");
   println!("***** 0. Setup *****************************************************************");
@@ -49,6 +51,16 @@ async fn main() {
     "-> VERSION: {:?}\n-> IMAGE: {:?}",
     rails_version_tag, image_tag
   );
+  if docker::image_exists("rails-cookies-everywhere:rails-base").await {
+    println!("-> Base image already exists, skipping.");
+  } else {
+    println!("-> Base image does not exist, building.");
+    if let Err(build_output) = docker::build("rails-base:latest").await {
+      eprintln!("Docker: Failed to build rails-cookies-everywhere:rails-base");
+      eprintln!("- Full error:\n {:?}", build_output);
+      std::process::exit(1);
+    }
+  }
 
   println!("\n********************************************************************************");
   println!("***** 1. Set up Docker image ***************************************************");
