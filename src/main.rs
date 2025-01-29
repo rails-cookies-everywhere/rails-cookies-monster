@@ -4,13 +4,12 @@ use std::process::Command;
 use tokio::task;
 use tokio::time::Duration;
 use urlencoding::decode;
-// use log::{debug, error, log_enabled, info, Level};
+use log::debug;
 
 use rails_cookies_monster::RailsCookiesMonster;
-use rails_cookies_monster::docker;
-use rails_cookies_monster::rails;
 
 lazy_static! {
+  #[derive(Debug)]
   pub(crate) static ref SECRET_KEY_BASE: String = match std::env::var("SECRET_KEY_BASE") {
     Ok(value) => value,
     Err(_) => {
@@ -21,6 +20,7 @@ lazy_static! {
 }
 
 lazy_static! {
+  #[derive(Debug)]
   pub(crate) static ref CANARY_VALUE: String = match std::env::var("CANARY_VALUE") {
     Ok(value) => value,
     Err(_) => {
@@ -39,8 +39,16 @@ async fn main() {
     std::process::exit(1);
   }
   env_logger::init();
+  debug!("Initialization:\n- Using SECRET_KEY_BASE: {}\n- Using CANARY_VALUE: {}",
+    SECRET_KEY_BASE.to_string(),
+    CANARY_VALUE.to_string()
+  );
   let mut rcm = RailsCookiesMonster::new();
   rcm.add_version_requirement(&args[1]);
+  if rcm.ruby_versions().is_empty() {
+    eprintln!("Error: No version matching requirement {}", args[1]);
+    std::process::exit(1);
+  }
   rcm.build_base_image().await;
   rcm.build_versions_images().await;
   // crate::docker::cache_images().await;
@@ -49,12 +57,6 @@ async fn main() {
 
 // // #[tokio::main]
 // async fn old_main() {
-//   // Extract RAILS_VERSION_TAG from the first argument
-//   let args: Vec<String> = env::args().collect();
-//   if args.len() < 2 {
-//     eprintln!("Usage: {} <RAILS_VERSION_TAG>", args[0]);
-//     std::process::exit(1);
-//   }
   
 //   // env_logger::init();
 //   println!("********************************************************************************");

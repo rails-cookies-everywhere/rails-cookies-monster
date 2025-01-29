@@ -1,0 +1,9 @@
+--- /usr/local/bundle/gems/activesupport-7.0.x/lib/active_support/logger_thread_safe_level.rb
++++ /usr/local/bundle/gems/activesupport-7.0.x/lib/active_support/logger_thread_safe_level.rb
+@@ -4,6 +4,6 @@
+-require "active_support/core_ext/module/attribute_accessors"
+-require "concurrent"
+-require "fiber"
++require "logger"
++
++

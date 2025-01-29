@@ -53,7 +53,7 @@ cargo run "8.0.1"
 Currently implemented features:
 - [x] Takes a version requirement as argument using [semver](https://github.com/dtolnay/semver).
 - [x] Checks if the docker images exist to avoid rebuilding them.
-- [x] Build the associated docker image (needs to have the `rails-base` image as a base).
+- [x] Build the associated docker image (needs to have the `ruby-base` image as a base).
 - [x] Runs the docker image and prints the cookies.
 - [x] Process versions in parallel.
 - [x] Use the Docker socket to build the images instead of CLI.

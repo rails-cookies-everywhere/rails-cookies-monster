@@ -1,16 +1,25 @@
 # check=skip=SecretsUsedInArgOrEnv
 
 # Dockerfile
-# Stage 1: Build rails
-FROM rails-cookies-everywhere:rails-base AS build-rails
+################################################################################
+# Stage 0: Setup
+ARG BASE_IMAGE_TAG=latest
+ARG RAILS_PATCH=none
+
+FROM rails-cookies-everywhere:ruby-base-${BASE_IMAGE_TAG} AS build-rails
 ARG RAILS_VERSION_TAG
+
 LABEL rails-cookies=everywhere
 LABEL rails-cookies-everywhere=rails:v$RAILS_VERSION_TAG
+
+################################################################################
+# Stage 1: Build rails
 WORKDIR /rails
 
 RUN git checkout v$RAILS_VERSION_TAG
 RUN gem build rails.gemspec
 
+################################################################################
 # Stage 2: Install rails
 FROM build-rails AS install-rails
 ARG RAILS_VERSION_TAG
@@ -18,13 +27,31 @@ WORKDIR /rails
 
 RUN gem install ./rails-$RAILS_VERSION_TAG.gem
 
-# Stage 3: Create app
-FROM install-rails AS create-app
+################################################################################
+# Stage 3.0: Patch (none)
+FROM install-rails AS patch-rails-none
+RUN echo "Hello from none"
+
+################################################################################
+# Stage 3.1: Patch (7.0.x)
+FROM install-rails AS patch-rails-7.0.x
+RUN echo "Hello from 7.0.x"
+ARG RAILS_VERSION_TAG
+WORKDIR /
+COPY rails-7.0.x.patch /
+RUN sed /rails-7.0.x.patch -i -e "s|7.0.x|$RAILS_VERSION_TAG|g"; true
+RUN patch -p1 < ./rails-7.0.x.patch; true
+
+################################################################################
+# Stage 4: Create app
+
+FROM patch-rails-${RAILS_PATCH} AS create-app
 WORKDIR /app
 
 RUN rails new cookie-monster
 
-# Stage 4: Setup app
+################################################################################
+# Stage 5: Setup app
 FROM create-app AS setup-app
 WORKDIR /app/cookie-monster
 
@@ -32,7 +59,8 @@ RUN bundle install
 COPY rails_patch/rails_controller.rb /app/cookie-monster/app/controllers/monsters_controller.rb
 COPY rails_patch/rails_routes.rb /app/cookie-monster/config/routes.rb
 
-# Stage 5: Run the app
+################################################################################
+# Stage 6: Run the app
 FROM setup-app AS run-app
 WORKDIR /app/cookie-monster
 

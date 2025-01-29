@@ -6,7 +6,6 @@ use std::sync::Arc;
 use lazy_static::lazy_static;
 use tokio::sync::Mutex;
 use dockworker::Docker;
-use dockworker::ContainerBuildOptions;
 use log::{error, info, debug, trace};
 
 pub(crate) mod build;
@@ -21,9 +20,6 @@ lazy_static! {
 pub(crate) async fn cache_images() {
   let mut images = list_images().await;
   images.sort();
-  for image in &images {
-    trace!("Found image: {}", image);
-  }
   let Ok(_) =  IMAGES.set(images.into_iter().collect()) else {
     error!("Error: Failed to cache available Docker images");
     return;
@@ -52,25 +48,4 @@ pub(crate) fn image_exists(image_tag: &str) -> bool {
     format!("rails-cookies-everywhere:{}", image_tag)
   };
   IMAGES.get().unwrap().contains(&image_full_tag)
-}
-
-
-pub async fn build_image(version: &str) -> Result<(), dockworker::response::Response> {
-  let (options, tar_path) = if version == "rails-base" {
-    let base_options = ContainerBuildOptions {
-      dockerfile: "Dockerfile".into(),
-      t: vec!["rails-cookies-everywhere:rails-base".to_string()],
-      ..ContainerBuildOptions::default()
-    };
-    (base_options, "./rails-base.tar")
-  } else {
-    let version_options = ContainerBuildOptions {
-      dockerfile: "Dockerfile".into(),
-      t: vec![format!("rails-cookies-everywhere:rails-v{}", version)],
-      buildargs: Some(HashMap::from([("RAILS_VERSION_TAG".to_owned(), version.to_owned())])),
-      ..ContainerBuildOptions::default()
-    };
-    (version_options, "./rails-base.tar")
-  };
-  build::build(options, tar_path).await
 }
