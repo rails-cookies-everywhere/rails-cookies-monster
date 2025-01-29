@@ -62,11 +62,11 @@ impl RailsCookiesMonster {
 
   async fn cache_available_images(&self) {
     if docker::IMAGES.get().is_none() {
-      debug!("Caching available Docker images");
+      debug!("Caching list of available Docker images");
       docker::cache_images().await;
-      debug!("-> Cached {} Docker images", docker::IMAGES.get().unwrap().len());
+      debug!("-> Cached list of {} Docker images", docker::IMAGES.get().unwrap().len());
     } else {
-      trace!("Docker images already cached");
+      trace!("Docker images list already cached");
     }
   }
 
