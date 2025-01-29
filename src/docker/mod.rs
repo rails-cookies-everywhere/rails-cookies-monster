@@ -22,7 +22,7 @@ pub(crate) async fn cache_images() {
   let mut images = list_images().await;
   images.sort();
   for image in &images {
-    info!("Found image: {}", image);
+    trace!("Found image: {}", image);
   }
   let Ok(_) =  IMAGES.set(images.into_iter().collect()) else {
     error!("Error: Failed to cache available Docker images");

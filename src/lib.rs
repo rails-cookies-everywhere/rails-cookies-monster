@@ -2,8 +2,7 @@ use std::collections::HashSet;
 use dockworker::response::Response;
 use docker::image_exists;
 use futures::future::join_all;
-use log::{error, info, trace};
-//use log::{debug, error, log_enabled, info, Level};
+use log::{error, info, debug, trace};
 
 use semver::VersionReq;
 
@@ -63,9 +62,9 @@ impl RailsCookiesMonster {
 
   async fn cache_available_images(&self) {
     if docker::IMAGES.get().is_none() {
-      info!("Caching available Docker images");
+      debug!("Caching available Docker images");
       docker::cache_images().await;
-      info!("-> Cached {} Docker images", docker::IMAGES.get().unwrap().len());
+      debug!("-> Cached {} Docker images", docker::IMAGES.get().unwrap().len());
     } else {
       trace!("Docker images already cached");
     }
