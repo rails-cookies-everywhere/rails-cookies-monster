@@ -3,6 +3,17 @@ name = "rails-cookies-monster"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "rcm"
+path = "src/main.rs"
+doc = false
+doctest = false
+test = false
+
+[lib]
+name = "rails_cookies_monster"
+path = "src/lib.rs"
+
 [dependencies]
 bollard = { version = "*", features = ["buildkit"] }
 

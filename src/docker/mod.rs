@@ -1,64 +1,76 @@
-use lazy_static::lazy_static;
+use std::collections::HashSet;
+use std::collections::HashMap;
+use std::sync::OnceLock;
 use std::sync::Arc;
+
+use lazy_static::lazy_static;
 use tokio::sync::Mutex;
 use dockworker::Docker;
+use dockworker::ContainerBuildOptions;
+use log::{error, info, debug, trace};
 
-mod build;
+pub(crate) mod build;
+
+pub(crate) static IMAGES: OnceLock<HashSet<String>> = OnceLock::new();
 
 lazy_static! {
-  pub static ref DOCKER: Arc<Mutex<Docker>> =
+  pub(crate) static ref DOCKER: Arc<Mutex<Docker>> =
     Arc::new(Mutex::new(Docker::connect_with_defaults().unwrap()));
 }
 
-pub async fn image_exists(image_tag: &str) -> bool {
-  DOCKER.
-    lock().
-    await.
-    images(true).
-    await.
-    unwrap().
-    iter().
-    any(|image| {
-      image.RepoTags.iter().any(|tag| tag == image_tag)
-    })
-  //   for_each(|image| {
-  //     println!("{:?}", image);
-  //   });
-  // false
-  // let image = format!("rails-cookies-everywhere={}", image_tag);
-  // let list_images_opts = ListImagesOptions::<String> {
-  //   all: true,
-  //   filters: HashMap::from([("label".to_string(), Vec::from([image]))]),
-  //   ..Default::default()
-  // };
-  // !DOCKER
-  //   .lock()
-  //   .await
-  //   .list_images(Some(list_images_opts))
-  //   .await
-  //   .unwrap()
-  //   .is_empty()
+pub(crate) async fn cache_images() {
+  let mut images = list_images().await;
+  images.sort();
+  for image in &images {
+    info!("Found image: {}", image);
+  }
+  let Ok(_) =  IMAGES.set(images.into_iter().collect()) else {
+    error!("Error: Failed to cache available Docker images");
+    return;
+  };
 }
 
-pub async fn build(image_tag: &str) -> Result<(), dockworker::errors::Error> {
-  if image_tag == "rails-base" {
-    build::build_base().await
+async fn list_images() -> Vec<String>{  
+  DOCKER
+    .lock()
+    .await
+    .images(true)
+    .await
+    .unwrap()
+    .iter()
+    .filter(|image| {
+      image.RepoTags.iter().any(|tag| tag.starts_with("rails-cookies-everywhere:"))
+    })
+    .flat_map(|image| image.RepoTags.iter().cloned())
+    .collect()
+}
+
+pub(crate) fn image_exists(image_tag: &str) -> bool {
+  let image_full_tag = if image_tag.starts_with("rails-cookies-everywhere:") {
+    image_tag.to_string()
   } else {
-    build::build_version(image_tag).await
-  }
-  // let image_tag = format!("rails:v{}", rails_version_tag);
-  // let Ok(mut current_dir) = std::env::current_dir() else {
-  //   return Err("Could not get current directory".into());
-  // };
-  // let dockerfile_path = encode(&current_dir.to_str().unwrap());
+    format!("rails-cookies-everywhere:{}", image_tag)
+  };
+  IMAGES.get().unwrap().contains(&image_full_tag)
+}
 
-  // let build_arg = format!("{{ \"RAILS_VERSION_TAG\": \"v{}\" }}", rails_version_tag);
-  // let build_arg = encode(&build_arg);
-  // let query = format!(
-  //   "context={}&t={}&buildargs={}",
-  //   dockerfile_path, image_tag, build_arg
-  // );
 
-  // // let docker = DOCKER_CLIENT.lock().await;
-  // // docker.build_image(&query).await
+pub async fn build_image(version: &str) -> Result<(), dockworker::response::Response> {
+  let (options, tar_path) = if version == "rails-base" {
+    let base_options = ContainerBuildOptions {
+      dockerfile: "Dockerfile".into(),
+      t: vec!["rails-cookies-everywhere:rails-base".to_string()],
+      ..ContainerBuildOptions::default()
+    };
+    (base_options, "./rails-base.tar")
+  } else {
+    let version_options = ContainerBuildOptions {
+      dockerfile: "Dockerfile".into(),
+      t: vec![format!("rails-cookies-everywhere:rails-v{}", version)],
+      buildargs: Some(HashMap::from([("RAILS_VERSION_TAG".to_owned(), version.to_owned())])),
+      ..ContainerBuildOptions::default()
+    };
+    (version_options, "./rails-base.tar")
+  };
+  build::build(options, tar_path).await
 }
