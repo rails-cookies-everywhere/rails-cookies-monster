@@ -44,13 +44,13 @@ async fn main() {
     SECRET_KEY_BASE.to_string(),
     CANARY_VALUE.to_string()
   );
-  let mut rcm = RailsCookiesMonster::new();
-  rcm.add_version_requirement(&args[1]);
-  if rcm.ruby_versions().is_empty() {
+  let mut monster = RailsCookiesMonster::new();
+  monster.add_version_requirement(&args[1]);
+  if monster.ruby_versions().is_empty() {
     eprintln!("Error: No version matching requirement {}", args[1]);
     std::process::exit(1);
   }
-  if let Err(errors) = rcm.build_base_image().await {
+  if let Err(errors) = monster.build_base_image().await {
     eprintln!("Failed to build {} ruby images", errors.len());
     for (rubyver, errror) in errors {
       eprintln!("- Failed to build image ruby-{}: {:?}", rubyver, errror);
@@ -58,7 +58,7 @@ async fn main() {
     eprintln!("Exiting...");
     std::process::exit(1);
   }
-  if let Err(errors) = rcm.build_versions_images().await {
+  if let Err(errors) = monster.build_versions_images().await {
     eprintln!("Failed to build {} rails images", errors.len());
     for (railsver, errror) in errors {
       eprintln!("- Failed to build image rails-v{}: {:?}", railsver, errror);

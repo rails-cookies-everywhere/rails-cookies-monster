@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "rcm"
+name = "rails-cookies-monter"
 path = "src/main.rs"
 doc = false
 doctest = false
@@ -23,7 +23,7 @@ rails-cookie-parser = "0.1.0"
 rayon = "1.10"
 
 serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.137"
+serde_json = "1.0.138"
 
 tokio = { version = "1", features = ["full"] }
 futures = "0.3"

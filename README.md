@@ -70,9 +70,9 @@ Currently implemented features:
 
 Examples:
 ```shell
-$ rcm --versions "^7.0.0" --generate-static-cookies
-$ rcm --versions "8.*" --versions "^7.1" --test-command 'bun lib-in-javscript.js'
-$ LD_PRELOAD=compiled_from_zig.so rcm --use-static-cookies --versions '*'
+$ rails-cookies-monter --versions "^7.0.0" --generate-static-cookies
+$ rails-cookies-monter --versions "8.*" --versions "^7.1" --test-command 'bun lib-in-javscript.js'
+$ LD_PRELOAD=compiled_from_zig.so rails-cookies-monter --use-static-cookies --versions '*'
 ```
 
 # Contributing
