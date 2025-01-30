@@ -93,7 +93,7 @@ impl RailsCookiesMonster {
     }
   }
 
-  pub async fn build_base_image(&self) {
+  pub async fn build_base_image(&self) -> Result<(), Vec<(String, String)>> {
     self.cache_available_images().await;
 
     let missing_bases: Vec<String> = self
@@ -107,7 +107,8 @@ impl RailsCookiesMonster {
       .cloned()
       .collect();
     if missing_bases.is_empty() {
-      return trace!("All Ruby base images are already built!");
+      trace!("All Ruby base images are already built!");
+      return Ok(());
     }
 
     info!("Building {} Ruby version images", missing_bases.len());
@@ -119,21 +120,34 @@ impl RailsCookiesMonster {
           info!("Building ruby-{} image", missing_base);
           let task = docker::build::base(&missing_base).await;
           match &task {
-            Ok(_) => trace!("-> Built Ruby {} image", missing_base),
-            Err(Response::Error(e)) => {
-              error!("-> Coult not build Ruby {} image: {}", missing_base, e.error)
-            },
-            Err(e) => {
-              error!("-> Coult not build Ruby {} image: {:?}", missing_base, e)
-            }
+            Ok(_) => Ok(()),
+            Err(error) => Err((missing_base, error.clone()))
           }
-          return task;
         })
       });
-    join_all(tasks).await;
+    
+    let results = join_all(tasks).await;
+    let errors: Vec<_> = results
+      .into_iter()
+      .filter_map(|result| {
+        match result {
+          Ok(Err(e)) => Some(e),
+          _ => None,
+        }
+      })
+      .collect();
+
+    if !errors.is_empty() {
+      Err(errors)
+    } else {
+      Ok(())
+    }
   }
 
-  pub async fn build_versions_images(&self) {
+
+
+
+  pub async fn build_versions_images(&self) -> Result<(), Vec<(String, String)>> {
     self.cache_available_images().await;
 
     let missing_versions: Vec<(String, String, String)> = self
@@ -146,7 +160,8 @@ impl RailsCookiesMonster {
       .cloned()
       .collect();
     if missing_versions.is_empty() {
-      return trace!("All Rails version images are already built");
+      trace!("All Rails version images are already built");
+      return Ok(());
     }
     info!("Building {} Rails version images", missing_versions.len());
 
@@ -158,18 +173,28 @@ impl RailsCookiesMonster {
           info!("Building Rails v{} image", rails_version);
           let task = docker::build::version(&ruby_version, &rails_version, &patch).await;
           match &task {
-            Ok(_) => trace!("-> Built Rails v{} image", rails_version),
-            Err(Response::Error(e)) => {
-              error!("-> Coult not build Rails v{} image: {}", rails_version, e.error)
-            },
-            Err(e) => {
-              error!("-> Coult not build Rails v{} image: {:?}", rails_version, e)
-            }
+            Ok(_) => Ok(()),
+            Err(error) => Err((rails_version, error.clone()))
           }
-          return task;
         })
       });
-    join_all(tasks).await;
+
+    let results = join_all(tasks).await;
+    let errors: Vec<_> = results
+      .into_iter()
+      .filter_map(|result| {
+        match result {
+          Ok(Err(e)) => Some(e),
+          _ => None,
+        }
+      })
+      .collect();
+
+    if !errors.is_empty() {
+      Err(errors)
+    } else {
+      Ok(())
+    }
   }
 
 }

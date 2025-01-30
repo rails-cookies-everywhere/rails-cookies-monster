@@ -8,7 +8,7 @@ use log::trace;
 
 use super::DOCKER;
 
-pub(crate) async fn build(options: ContainerBuildOptions, tar_file: &Path) -> Result<(), Response> {
+pub(crate) async fn build(options: ContainerBuildOptions, tar_file: &Path) -> Result<(), String> {
   let mut stream = DOCKER.
     lock().
     await.
@@ -18,15 +18,15 @@ pub(crate) async fn build(options: ContainerBuildOptions, tar_file: &Path) -> Re
 
   while let Some(Ok(msg)) = stream.next().await {
     trace!("{:?}", msg);
-    if matches!(msg, Response::Error(_)) {
-      return Err(msg);
+    if matches!(msg, Response::Error(_)) {;
+      return Err(msg.as_error().unwrap().error.clone());
     }
   }
   Ok(())
 }
 
 // // static DOCKER_BASE: &[u8] = include_bytes!("../../ruby-base.tar");
-pub async fn base(base: &str) -> Result<(), dockworker::response::Response> {
+pub async fn base(base: &str) -> Result<(), String> {
   let args = [
     ("BASE_IMAGE_TAG".to_owned(), base.to_owned()),
   ];
@@ -43,7 +43,7 @@ pub async fn base(base: &str) -> Result<(), dockworker::response::Response> {
 }
 
 // // static DOCKER_VERSION: &[u8] = include_bytes!("../../rails-version.tar");
-pub async fn version(base: &str, version: &str, patch: &str) -> Result<(), dockworker::response::Response> { 
+pub async fn version(base: &str, version: &str, patch: &str) -> Result<(), String> { 
   let args = [
     ("BASE_IMAGE_TAG".to_owned(), base.to_owned()),
     ("RAILS_VERSION_TAG".to_owned(), version.to_owned()),
