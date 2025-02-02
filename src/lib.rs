@@ -290,7 +290,7 @@ impl RailsCookiesMonster {
           let url = format!("http://localhost:{}/", port);
           let mut count = 0;
           loop {
-            sleep(Duration::from_millis(500)).await;
+            sleep(Duration::from_millis(1000)).await;
             match reqwest::get(&url).await {
               Ok(response) => {
                 break response.headers().get_all(SET_COOKIE)
