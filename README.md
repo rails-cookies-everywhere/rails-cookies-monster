@@ -44,6 +44,13 @@ The `CANARY_VALUE` is the string that must be found after decrypting the cookies
 # Set up specific cookie configuration
 export SECRET_KEY_BASE="rails-cookies-all-around"
 export CANARY_VALUE="you must find this string in the decoded cookie"
+# Set up logging using crate env_logger
+export RUST_LOG="{info|debug|trace}"
+# Display the docker logs (trace-level) when building the containers
+export DEBUG_DOCKER_LOGS="any-value-is-true-if-present"
+# Avoid rebuilding the Rails images if they already exist
+export CACHE_DOCKER_IMAGES="any-value-is-true-if-present"
+
 # Run against a specific Rails version
 cargo run "8.0.1"
 ```
@@ -57,7 +64,8 @@ Currently implemented features:
 - [x] Runs the docker image and prints the cookies.
 - [x] Process versions in parallel.
 - [x] Use the Docker socket to build the images instead of CLI.
-- [ ] Use the Docker socket to run the container.
+- [x] Use the Docker socket to run the container(s) on ports starting from 3000.
+- [ ] Use [hyper](https://github.com/hyperium/hyper) to retrieve the cookies from running containers.
 - [x] Pass the cookies to a [rust cookies parser library](https://github.com/rails-cookies-everywhere/rails-cookies-rust).
 - [x] Check the cookie against the canary value.
 - [ ] Do more with the cookies, either pass them to a FFI or a binary?

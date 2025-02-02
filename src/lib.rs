@@ -177,7 +177,12 @@ impl RailsCookiesMonster {
     let missing_versions: Vec<(String, String, String)> = self
       .rails_versions()
       .iter()
-      .filter(|(_, rails_version, _)| !image_exists(&format!("rails-v{}", rails_version)))
+      .filter(|(_, rails_version, _)| {
+        if std::env::var("CACHE_DOCKER_IMAGES").is_err() {
+          return true;
+        }
+        !image_exists(&format!("rails-v{}", rails_version))
+      })
       .cloned()
       .collect();
     if missing_versions.is_empty() {
