@@ -17,8 +17,10 @@ pub(crate) async fn build(options: ContainerBuildOptions, tar_file: &Path) -> Re
     unwrap();
 
   while let Some(Ok(msg)) = stream.next().await {
-    trace!("{:?}", msg);
-    if matches!(msg, Response::Error(_)) {;
+    if std::env::var("DEBUG_DOCKER_LOGS").is_ok() {
+      trace!("{:?}", msg);
+    }
+    if matches!(msg, Response::Error(_)) {
       return Err(msg.as_error().unwrap().error.clone());
     }
   }

@@ -1,12 +1,11 @@
 use std::collections::HashSet;
-use std::collections::HashMap;
 use std::sync::OnceLock;
 use std::sync::Arc;
 
 use lazy_static::lazy_static;
 use tokio::sync::Mutex;
 use dockworker::Docker;
-use log::{error, info, debug, trace};
+use log::error;
 
 pub(crate) mod build;
 

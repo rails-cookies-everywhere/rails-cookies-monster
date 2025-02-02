@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::time::Duration;
 use itertools::Itertools;
 use futures::future::join_all;
 use log::{error, info, debug, trace};
@@ -10,7 +9,6 @@ use dockworker::ContainerCreateOptions;
 use dockworker::ContainerHostConfig;
 use dockworker::ExposedPorts;
 use dockworker::PortBindings;
-
 
 pub mod docker;
 pub mod rails;
@@ -46,15 +44,15 @@ lazy_static! {
 #[derive(Default)]
 pub struct RailsCookiesMonster {
   versions: HashSet<RailsVersion>,
-  containers: HashSet<String>
+  containers: HashSet<(String, String)>
 }
 
 impl RailsCookiesMonster {
   pub fn new() -> Self {
-    debug!("Initialization:\n- Using SECRET_KEY_BASE: {}\n- Using CANARY_VALUE: {}",
-      crate::SECRET_KEY_BASE.to_string(),
-      crate::CANARY_VALUE.to_string()
-    );
+    debug!("Initialization:");
+    debug!("- Using SECRET_KEY_BASE: {}", crate::SECRET_KEY_BASE.to_string());
+    debug!("- Using CANARY_VALUE: {}", crate::CANARY_VALUE.to_string());
+
     Self::default()
   }
 
@@ -221,14 +219,11 @@ impl RailsCookiesMonster {
   }
 
   pub async fn start_containers(&mut self) {
-    println!("Hi?");
     let versions_list = self.rails_versions();
-    println!("__{:?}__", versions_list);
     let ids = versions_list.iter()
       .cloned()
       .enumerate()
       .map(|(i, (_, rails_version, _))| {
-        println!("Spawn");
         tokio::spawn(async move {
           let image_tag = format!("rails-cookies-everywhere:rails-v{}", rails_version);
           let mut host_config = ContainerHostConfig::new();
@@ -250,33 +245,37 @@ impl RailsCookiesMonster {
             .start_container(&container.id)
             .await
             .unwrap();
-          return container.id;
+          return (rails_version, container.id);
         })
       });
 
     let results = join_all(ids).await;
-    println!("Results of starting containers: {:?}", results);
+    debug!("Started {} containers", results.len());
     results.iter()
       .filter_map(|r| r.as_ref().ok())
-      .for_each(|container_id| {
-        self.containers.insert(container_id.to_owned());
-    });
+      .for_each(|(rails_version, container_id)| {
+        debug!("- Container for {}: {}", &rails_version, &container_id);
+        self.containers.insert((rails_version.to_owned(), container_id.to_owned()));
+      });
     ()
   }
 
   pub async fn stop_containers(&self) {
-    let containers = self.containers.clone();
+    let containers = self.containers
+      .iter()
+      .map(|(_, container_id)| container_id)
+      .cloned()
+      .collect();
     RailsCookiesMonster::drop_containers(containers).await;
   }
 
-  pub async fn drop_containers(containers: HashSet<String>) {
-    trace!("Stop containers: {:?}", containers);
+  pub async fn drop_containers(containers: Vec<String>) {
+    trace!("Dropping {} containers", containers.len());
     let tasks = containers.iter()
       .map(|container_id| {
         let id_to_kill = container_id.clone();
-        trace!("Note to stop {}", id_to_kill);
         tokio::spawn(async move {
-          // Do we really need to stop it? :3
+          // Do we really need to stop it if we remove it right after?
           // docker::DOCKER.lock()
           //   .await
           //   .stop_container(&id_to_kill, Duration::from_secs(1))
@@ -288,20 +287,10 @@ impl RailsCookiesMonster {
             .remove_container(&id_to_kill, Some(true), Some(true), None)
             .await
             .unwrap();
-          trace!("Removed container {}", id_to_kill);
+          trace!("- Removed container: {}", id_to_kill);
         })
       });
-    let results = join_all(tasks).await;
-    println!("Join: {:?}", results);
+    let _ = join_all(tasks).await;
   }
 
 }
-
-// impl Drop for RailsCookiesMonster {
-//   fn drop(&mut self) {
-//     trace!("Drop the monster!");
-//     let containers = self.containers.clone();
-//     tokio::spawn(async move { RailsCookiesMonster::drop_containers(containers).await; });
-//     trace!("Dropped!");
-//   }
-// }

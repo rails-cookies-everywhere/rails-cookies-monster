@@ -1,11 +1,6 @@
-use lazy_static::lazy_static;
 use std::env;
-use std::f32::consts::E;
 use std::process::Command;
 use tokio::task;
-use tokio::time::Duration;
-use urlencoding::decode;
-use log::debug;
 
 use rails_cookies_monster::RailsCookiesMonster;
 
@@ -44,13 +39,10 @@ async fn main() {
     eprintln!("Exiting...");
     std::process::exit(1);
   }
-  println!("Hello");
   monster.start_containers().await;
-  println!("World");
-  // crate::docker::cache_images().await;
+  
 
   monster.stop_containers().await;
-  println!("Stopped?")
 
 }
 
