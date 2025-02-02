@@ -5,6 +5,6 @@ class MonstersController < ActionController::Base
     cookies.signed[:signed] = ENV['CANARY_VALUE']
     cookies.encrypted[:encrypted] = ENV['CANARY_VALUE']
     session[:session] = ENV['CANARY_VALUE']
-    head :ok
+    render json: { version: Rails::VERSION::STRING }
   end
 end

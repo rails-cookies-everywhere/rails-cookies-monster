@@ -48,13 +48,40 @@ RUN patch -p1 < ./rails-7.0.x.patch; true
 FROM patch-rails-${RAILS_PATCH} AS create-app
 WORKDIR /app
 
-RUN rails new cookie-monster
+RUN rails new cookie-monster \
+  --quiet \
+  --skip-bundle \
+  --skip-git \
+  --skip-docker \
+  --skip-keeps \
+  --skip-action-mailer \
+  --skip-action-mailbox \
+  --skip-action-text \
+  --skip-active-record \
+  --skip-active-job \
+  --skip-active-storage \
+  --skip-action-cable \
+  --skip-asset-pipeline \
+  --skip-javascript \
+  --skip-hotwire \
+  --skip-jbuilder \
+  --skip-test \
+  --skip-system-test \
+  --skip-bootsnap \
+  --skip-dev-gems \
+  --skip-thruster \
+  --skip-rubocop \
+  --skip-brakeman \
+  --skip-ci \
+  --skip-kamal \
+  --skip-solid
 
 ################################################################################
 # Stage 5: Setup app
 FROM create-app AS setup-app
 WORKDIR /app/cookie-monster
 
+RUN sed -i Gemfile -e 's|gem "rails", "~> |gem "rails", "|'
 RUN bundle install
 COPY rails_patch/rails_controller.rb /app/cookie-monster/app/controllers/monsters_controller.rb
 COPY rails_patch/rails_routes.rb /app/cookie-monster/config/routes.rb

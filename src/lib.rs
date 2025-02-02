@@ -219,11 +219,17 @@ impl RailsCookiesMonster {
   }
 
   pub async fn start_containers(&mut self) {
-    let versions_list = self.rails_versions();
+    let mut versions_list: Vec<_> = self
+      .rails_versions()
+      .iter()
+      .map(|(_, rails_version, _)| rails_version)
+      .cloned()
+      .collect();
+    versions_list.sort();
     let ids = versions_list.iter()
       .cloned()
       .enumerate()
-      .map(|(i, (_, rails_version, _))| {
+      .map(|(i, rails_version)| {
         tokio::spawn(async move {
           let image_tag = format!("rails-cookies-everywhere:rails-v{}", rails_version);
           let mut host_config = ContainerHostConfig::new();
