@@ -1,14 +1,43 @@
 use std::collections::HashSet;
+use std::time::Duration;
 use itertools::Itertools;
-use dockworker::response::Response;
 use futures::future::join_all;
 use log::{error, info, debug, trace};
 
+use lazy_static::lazy_static;
 use semver::VersionReq;
+use dockworker::ContainerCreateOptions;
+use dockworker::ContainerHostConfig;
+use dockworker::ExposedPorts;
+use dockworker::PortBindings;
+
 
 pub mod docker;
 pub mod rails;
+use docker::image_exists;
 use rails::versions::RailsVersion;
+
+lazy_static! {
+  #[derive(Debug)]
+  pub(crate) static ref SECRET_KEY_BASE: String = match std::env::var("SECRET_KEY_BASE") {
+    Ok(value) => value,
+    Err(_) => {
+      std::env::set_var("SECRET_KEY_BASE", "rails-cookies-everywhere");
+      "rails-cookies-everywhere".to_string()
+    }
+  };
+}
+
+lazy_static! {
+  #[derive(Debug)]
+  pub(crate) static ref CANARY_VALUE: String = match std::env::var("CANARY_VALUE") {
+    Ok(value) => value,
+    Err(_) => {
+      std::env::set_var("CANARY_VALUE", "correct-horse-battery-staple");
+      "correct-horse-battery-staple".to_string()
+    }
+  };
+}
 
 
 /// A instance of Rails Cookies Monster tests.
@@ -16,11 +45,16 @@ use rails::versions::RailsVersion;
 /// * versions: The versions that will be checked during this run
 #[derive(Default)]
 pub struct RailsCookiesMonster {
-  versions: HashSet<RailsVersion>
+  versions: HashSet<RailsVersion>,
+  containers: HashSet<String>
 }
 
 impl RailsCookiesMonster {
   pub fn new() -> Self {
+    debug!("Initialization:\n- Using SECRET_KEY_BASE: {}\n- Using CANARY_VALUE: {}",
+      crate::SECRET_KEY_BASE.to_string(),
+      crate::CANARY_VALUE.to_string()
+    );
     Self::default()
   }
 
@@ -54,11 +88,9 @@ impl RailsCookiesMonster {
   /// according to their string representation.
   /// 
   /// # Returns
-  /// 
   /// * `Vec<String>` - A sorted vector containing all Rails versions to be checked
   /// 
   /// # Examples
-  /// 
   /// ```
   /// let mut monster = RailsCookiesMonster::new();
   /// monster.add_version_requirement(">=7.0");
@@ -100,10 +132,7 @@ impl RailsCookiesMonster {
       .ruby_versions()
       .iter()
       .unique()
-      .filter(|version| {
-        let image_tag = format!("ruby-base-{}", version);
-        !docker::image_exists(&image_tag)
-      })
+      .filter(|version| !image_exists(&format!("ruby-base-{}", version)))
       .cloned()
       .collect();
     if missing_bases.is_empty() {
@@ -144,19 +173,13 @@ impl RailsCookiesMonster {
     }
   }
 
-
-
-
   pub async fn build_versions_images(&self) -> Result<(), Vec<(String, String)>> {
     self.cache_available_images().await;
 
     let missing_versions: Vec<(String, String, String)> = self
       .rails_versions()
       .iter()
-      .filter(|(_, rails_version, _)| {
-        let image_tag = format!("rails-v{}", rails_version);
-        !docker::image_exists(&image_tag)
-      })
+      .filter(|(_, rails_version, _)| !image_exists(&format!("rails-v{}", rails_version)))
       .cloned()
       .collect();
     if missing_versions.is_empty() {
@@ -197,4 +220,88 @@ impl RailsCookiesMonster {
     }
   }
 
+  pub async fn start_containers(&mut self) {
+    println!("Hi?");
+    let versions_list = self.rails_versions();
+    println!("__{:?}__", versions_list);
+    let ids = versions_list.iter()
+      .cloned()
+      .enumerate()
+      .map(|(i, (_, rails_version, _))| {
+        println!("Spawn");
+        tokio::spawn(async move {
+          let image_tag = format!("rails-cookies-everywhere:rails-v{}", rails_version);
+          let mut host_config = ContainerHostConfig::new();
+          host_config.port_bindings(PortBindings(vec![(3000, "tcp".to_string(), 3000 + i as u16)]));
+          let mut options = ContainerCreateOptions::new(&image_tag);
+          options.env(format!("SECRET_KEY_BASE={}", SECRET_KEY_BASE.to_string()))
+            .env(format!("CANARY_VALUE={}", CANARY_VALUE.to_string()))
+            .exposed_ports(ExposedPorts(vec![(3000, "tcp".to_string())]))
+            .host_config(host_config);
+          
+          let container_tag = format!("rails-cookies-everywhere-rails-v{}", rails_version);
+          let container = docker::DOCKER.lock()
+            .await
+            .create_container(Some(&container_tag), &options)
+            .await
+            .unwrap();
+          docker::DOCKER.lock()
+            .await
+            .start_container(&container.id)
+            .await
+            .unwrap();
+          return container.id;
+        })
+      });
+
+    let results = join_all(ids).await;
+    println!("Results of starting containers: {:?}", results);
+    results.iter()
+      .filter_map(|r| r.as_ref().ok())
+      .for_each(|container_id| {
+        self.containers.insert(container_id.to_owned());
+    });
+    ()
+  }
+
+  pub async fn stop_containers(&self) {
+    let containers = self.containers.clone();
+    RailsCookiesMonster::drop_containers(containers).await;
+  }
+
+  pub async fn drop_containers(containers: HashSet<String>) {
+    trace!("Stop containers: {:?}", containers);
+    let tasks = containers.iter()
+      .map(|container_id| {
+        let id_to_kill = container_id.clone();
+        trace!("Note to stop {}", id_to_kill);
+        tokio::spawn(async move {
+          // Do we really need to stop it? :3
+          // docker::DOCKER.lock()
+          //   .await
+          //   .stop_container(&id_to_kill, Duration::from_secs(1))
+          //   .await
+          //   .unwrap();
+          // trace!("Stopped container {}", id_to_kill);
+          docker::DOCKER.lock()
+            .await
+            .remove_container(&id_to_kill, Some(true), Some(true), None)
+            .await
+            .unwrap();
+          trace!("Removed container {}", id_to_kill);
+        })
+      });
+    let results = join_all(tasks).await;
+    println!("Join: {:?}", results);
+  }
+
 }
+
+// impl Drop for RailsCookiesMonster {
+//   fn drop(&mut self) {
+//     trace!("Drop the monster!");
+//     let containers = self.containers.clone();
+//     tokio::spawn(async move { RailsCookiesMonster::drop_containers(containers).await; });
+//     trace!("Dropped!");
+//   }
+// }

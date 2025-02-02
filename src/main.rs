@@ -9,28 +9,6 @@ use log::debug;
 
 use rails_cookies_monster::RailsCookiesMonster;
 
-lazy_static! {
-  #[derive(Debug)]
-  pub(crate) static ref SECRET_KEY_BASE: String = match std::env::var("SECRET_KEY_BASE") {
-    Ok(value) => value,
-    Err(_) => {
-      std::env::set_var("SECRET_KEY_BASE", "rails-cookies-everywhere");
-      "rails-cookies-everywhere".to_string()
-    }
-  };
-}
-
-lazy_static! {
-  #[derive(Debug)]
-  pub(crate) static ref CANARY_VALUE: String = match std::env::var("CANARY_VALUE") {
-    Ok(value) => value,
-    Err(_) => {
-      std::env::set_var("CANARY_VALUE", "correct-horse-battery-staple");
-      "correct-horse-battery-staple".to_string()
-    }
-  };
-}
-
 #[tokio::main]
 async fn main() {
   // Extract RAILS_VERSION_TAG from the first argument
@@ -40,16 +18,16 @@ async fn main() {
     std::process::exit(1);
   }
   env_logger::init();
-  debug!("Initialization:\n- Using SECRET_KEY_BASE: {}\n- Using CANARY_VALUE: {}",
-    SECRET_KEY_BASE.to_string(),
-    CANARY_VALUE.to_string()
-  );
+
+  // Set up Monster
   let mut monster = RailsCookiesMonster::new();
   monster.add_version_requirement(&args[1]);
   if monster.ruby_versions().is_empty() {
     eprintln!("Error: No version matching requirement {}", args[1]);
     std::process::exit(1);
   }
+
+  // Set up images
   if let Err(errors) = monster.build_base_image().await {
     eprintln!("Failed to build {} ruby images", errors.len());
     for (rubyver, errror) in errors {
@@ -66,62 +44,19 @@ async fn main() {
     eprintln!("Exiting...");
     std::process::exit(1);
   }
+  println!("Hello");
+  monster.start_containers().await;
+  println!("World");
   // crate::docker::cache_images().await;
+
+  monster.stop_containers().await;
+  println!("Stopped?")
 
 }
 
 // // #[tokio::main]
 // async fn old_main() {
   
-//   // env_logger::init();
-//   println!("********************************************************************************");
-//   println!("***** 0. Setup *****************************************************************");
-//   println!(
-//     "-> SECRET: {:?}\n-> CANARY: {:?}",
-//     *SECRET_KEY_BASE, *CANARY_VALUE
-//   );
-//   let rails_version_tag = &args[1];
-//   let Ok(rails_req) = semver::VersionReq::parse(&args[1]) else {
-//     eprintln!("Error: Cannot parse version requirement: {}", args[0]);
-//     std::process::exit(1);
-//   };
-//   let rails_versions = rails::versions::match_versions(&rails_req);
-//   println!("-> VERSIONS: {:?}", rails_versions);
-
-//   if docker::image_exists("rails-cookies-everywhere:rails-base") {
-//     println!("-> Base image already exists, skipping.");
-//   } else {
-//     println!("-> Base image does not exist, building.");
-//     if let Err(build_output) = docker::build("rails-base").await {
-//       eprintln!("Docker: Failed to build rails-cookies-everywhere:rails-base");
-//       eprintln!("- Full error:\n {:?}", build_output);
-//       std::process::exit(1);
-//     }
-//   }
-
-//   let image_tag = format!("rails:v{}", rails_version_tag);
-//   println!(
-//     "-> VERSION: {:?}\n-> IMAGE: {:?}",
-//     rails_version_tag, image_tag
-//   );
-
-
-
-//   println!("\n********************************************************************************");
-//   println!("***** 1. Set up Docker image ***************************************************");
-//   for version in rails_versions {
-//     if docker::image_exists(&format!("rails-cookies-everywhere:rails-v{}", version)) {
-//       println!("-> Image rails-cookies-everywhere:rails-v{} exists, skipping", version);
-//     } else {
-//       println!("-> Image rails-cookies-everywhere:rails-v{} does not exist, building...", version);
-//       if let Err(build_output) = docker::build(&version).await {
-//         eprintln!("Docker: Failed to build rails-cookies-everywhere:rails-v{}", version);
-//         eprintln!("- Full error:\n {:?}", build_output);
-//         std::process::exit(1);
-//       }
-//     }
-//   }
-
 
 
 //   println!("\n********************************************************************************");
