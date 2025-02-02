@@ -36,7 +36,7 @@ pub async fn base(base: &str) -> Result<(), String> {
     dockerfile: "Dockerfile".into(),
     t: vec![format!("rails-cookies-everywhere:ruby-base-{}", base)],
     buildargs: Some(HashMap::from(args)),
-    q: true,
+    q: std::env::var("DEBUG_DOCKER_LOGS").is_err(),
     ..ContainerBuildOptions::default()
   };
   let cargo_path = &std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_PATH not set");
@@ -55,7 +55,7 @@ pub async fn version(base: &str, version: &str, patch: &str) -> Result<(), Strin
     dockerfile: "Dockerfile".into(),
     t: vec![format!("rails-cookies-everywhere:rails-v{}", version)],
     buildargs: Some(HashMap::from(args)),
-    q: true,
+    q: std::env::var("DEBUG_DOCKER_LOGS").is_err(),
     ..ContainerBuildOptions::default()
   };
   let cargo_path = &std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_PATH not set");
