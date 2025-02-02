@@ -41,6 +41,10 @@ async fn main() {
   }
   monster.start_containers().await;
   
+  let cookies = monster.query_containers().await;
+  for (version, cookie) in cookies {
+    println!("{} => {}", version, cookie);
+  }
 
   monster.stop_containers().await;
 

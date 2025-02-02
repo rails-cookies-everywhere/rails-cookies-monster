@@ -3,6 +3,9 @@ use itertools::Itertools;
 use futures::future::join_all;
 use log::{error, info, debug, trace};
 
+use reqwest::header::SET_COOKIE;
+use tokio::time::{sleep, Duration};
+
 use lazy_static::lazy_static;
 use semver::VersionReq;
 use dockworker::ContainerCreateOptions;
@@ -270,6 +273,60 @@ impl RailsCookiesMonster {
       });
     ()
   }
+
+  pub async fn query_containers(&self) -> Vec<(String, String)> {
+    let mut rails_versions: Vec<_> = self.containers
+      .iter()
+      .map(|(rails_version, _)| rails_version)
+      .cloned()
+      .collect();
+    rails_versions.sort();
+    let cookies = rails_versions.iter()
+      .cloned()
+      .enumerate()
+      .map(|(i, rails_version)| {
+        let port = 3000 + i as u16;
+        tokio::spawn(async move {
+          let url = format!("http://localhost:{}/", port);
+          let mut count = 0;
+          loop {
+            sleep(Duration::from_millis(500)).await;
+            match reqwest::get(&url).await {
+              Ok(response) => {
+                break response.headers().get_all(SET_COOKIE)
+                  .iter()
+                  .map(|cookie| {
+                    (
+                      rails_version.clone(),
+                      cookie.to_str().unwrap().to_owned()
+                    )
+                  })
+                  .collect();
+              },
+              Err(_) => {
+                if count > 10 {
+                  error!("Failed to query container {} after {} attempts", rails_version, count);
+                  break vec![];
+                }
+                count += 1;
+              }
+            }
+          }
+        })
+      });
+
+    let responses = join_all(cookies).await;
+
+
+    let cookies: Vec<_> = responses
+      .iter()
+      .map(|r| r.as_ref().unwrap())
+      .flatten()
+      .cloned()
+      .collect();
+    cookies
+  }
+
 
   pub async fn stop_containers(&self) {
     let containers = self.containers

@@ -53,6 +53,9 @@ export CACHE_DOCKER_IMAGES="any-value-is-true-if-present"
 
 # Run against a specific Rails version
 cargo run "8.0.1"
+
+# Run against the two latest versions
+cargo run "^8.0.0"
 ```
 
 # Development Status
@@ -65,9 +68,9 @@ Currently implemented features:
 - [x] Process versions in parallel.
 - [x] Use the Docker socket to build the images instead of CLI.
 - [x] Use the Docker socket to run the container(s) on ports starting from 3000.
-- [ ] Use [hyper](https://github.com/hyperium/hyper) to retrieve the cookies from running containers.
-- [x] Pass the cookies to a [rust cookies parser library](https://github.com/rails-cookies-everywhere/rails-cookies-rust).
-- [x] Check the cookie against the canary value.
+- [x] Use [reqwest](https://github.com/seanmonstar/reqwest) to retrieve the cookies from running containers.
+- [ ] Pass the cookies to a [rust cookies parser library](https://github.com/rails-cookies-everywhere/rails-cookies-rust).
+- [ ] Check the cookie against the canary value.
 - [ ] Do more with the cookies, either pass them to a FFI or a binary?
 
 ## Planned Features

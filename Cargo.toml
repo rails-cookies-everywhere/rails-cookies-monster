@@ -32,11 +32,9 @@ log = "0.4.25"
 env_logger = "0.11.6"
 semver = "1.0.25"
 
-# http-body-util = "0.1.2"
-# futures-util = "0.3.31"
-hyper = "1.5.2"
 tokio-util = "0.7.13"
 itertools = "0.14.0"
+reqwest = "0.12.12"
 
 [build-dependencies]
 tar = "0.4.43"
