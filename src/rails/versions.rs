@@ -38,18 +38,22 @@ lazy_static! {
     // RailsVersion::new("latest", 6, 1, 6, "7.0.x"),
     // RailsVersion::new("latest", 6, 1, 7, "7.0.x"),
 
-    // // Rails 7.0.0 to 7.0.8
-    // // An actual pain in the ass to diagnostic, but it seems a simple require does
-    // // the trick.
+
+    // Rails 7.0.0
+    // Multiple reports that it doesn't work with only "use 7.0.stable" as an answer.
     // RailsVersion::new("3.1.2", 7, 0, 0, "7.0.x"),
-    // RailsVersion::new("3.1.2", 7, 0, 1, "7.0.x"),
-    // RailsVersion::new("3.1.2", 7, 0, 2, "7.0.x"),
-    // RailsVersion::new("3.1.2", 7, 0, 3, "7.0.x"),
-    // RailsVersion::new("3.1.2", 7, 0, 4, "7.0.x"),
-    // RailsVersion::new("3.1.2", 7, 0, 5, "7.0.x"),
-    // RailsVersion::new("3.1.2", 7, 0, 6, "7.0.x"),
-    // RailsVersion::new("3.1.2", 7, 0, 7, "7.0.x"),
-    // RailsVersion::new("3.1.2", 7, 0, 8, "7.0.x"),
+
+    // Rails 7.0.1 to 7.0.8
+    // An actual pain in the ass to diagnostic, but it seems a simple require does
+    // the trick.
+    RailsVersion::new("3.1.2", 7, 0, 1, "7.0.x"),
+    RailsVersion::new("3.1.2", 7, 0, 2, "7.0.x"),
+    RailsVersion::new("3.1.2", 7, 0, 3, "7.0.x"),
+    RailsVersion::new("3.1.2", 7, 0, 4, "7.0.x"),
+    RailsVersion::new("3.1.2", 7, 0, 5, "7.0.x"),
+    RailsVersion::new("3.1.2", 7, 0, 6, "7.0.x"),
+    RailsVersion::new("3.1.2", 7, 0, 7, "7.0.x"),
+    RailsVersion::new("3.1.2", 7, 0, 8, "7.0.x"),
 
     // Rails 7.1.0 to 7.2.2
     RailsVersion::new("latest", 7, 1, 0, "none"),
