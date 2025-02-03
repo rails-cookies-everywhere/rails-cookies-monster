@@ -2,6 +2,7 @@ use std::env;
 
 use rails_cookies_monster::rails;
 use rails_cookies_monster::RailsCookiesMonster;
+use log::trace;
 
 #[tokio::main]
 async fn main() {
@@ -41,14 +42,31 @@ async fn main() {
   monster.start_containers().await;
 
   let cookies = monster.query_containers().await;
-  for (version, cookie) in cookies {
-    println!("Version: {}", version);
-    let (cookie_name, cookie_value) = cookie.split_once(';').unwrap().0.split_once('=').unwrap();
-    println!(" => COOKIES: _{}", cookie_name);
-    let message =
-      rails::decipher_cookie(&version, &cookie_value).expect("Could not decipher cookie");
-    println!(" => MESSAGE: _{}", message);
-  }
 
   monster.stop_containers().await;
+
+  let canary = std::env::var("CANARY_VALUE").unwrap();
+  for (version, cookie) in cookies {
+    // println!("Version: {}", version);
+    let (cookie_name, cookie_value) = cookie.split_once(';').unwrap().0.split_once('=').unwrap();
+    // println!(" => COOKIES: _{}", cookie_name);
+    let message =
+      rails::decipher_cookie(&version, cookie_value).expect("Could not decipher cookie");
+    // println!(" => MESSAGE: _{}", message);
+
+    match cookie_name {
+      "encrypted" => {
+        let message = message.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
+        assert_eq!(canary, message, "Decrypted cookie does not contain the canary value: {} (Version {}, canary: {})", message, version, canary);
+        trace!("Version {}, found canary in cookie  {}!", version, cookie_name);
+      },
+      "_cookie_monster_session" => {
+        let message = message.split('"').nth(7).unwrap();
+        assert_eq!(canary, message, "Decrypted session does not contain the canary value: {} (Version {}, canary: {})", message, version, canary);
+        trace!("Version {}, found canary in session {}!", version, cookie_name);
+      },
+      _ => { unimplemented!() }
+    }
+
+  }
 }
