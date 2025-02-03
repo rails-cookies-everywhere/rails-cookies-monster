@@ -40,8 +40,8 @@ lazy_static! {
 
 
     // Rails 7.0.0
-    // Multiple reports that it doesn't work with only "use 7.0.stable" as an answer.
-    // RailsVersion::new("3.1.2", 7, 0, 0, "7.0.x"),
+    // Does no
+    RailsVersion::new("3.0.7", 7, 0, 0, "7.0.x"),
 
     // Rails 7.0.1 to 7.0.8
     // An actual pain in the ass to diagnostic, but it seems a simple require does
