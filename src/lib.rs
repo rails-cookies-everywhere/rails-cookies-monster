@@ -11,7 +11,6 @@ use dockworker::ContainerCreateOptions;
 use dockworker::ContainerHostConfig;
 use dockworker::ExposedPorts;
 use dockworker::PortBindings;
-use lazy_static::lazy_static;
 use semver::VersionReq;
 
 pub mod docker;
@@ -19,47 +18,44 @@ pub mod rails;
 use docker::image_exists;
 use rails::versions::RailsVersion;
 
-lazy_static! {
-  #[derive(Debug)]
-  pub(crate) static ref SECRET_KEY_BASE: String = match std::env::var("SECRET_KEY_BASE") {
-    Ok(value) => value,
-    Err(_) => {
-      std::env::set_var("SECRET_KEY_BASE", "rails-cookies-everywhere");
-      "rails-cookies-everywhere".to_string()
-    }
-  };
-}
-
-lazy_static! {
-  #[derive(Debug)]
-  pub(crate) static ref CANARY_VALUE: String = match std::env::var("CANARY_VALUE") {
-    Ok(value) => value,
-    Err(_) => {
-      std::env::set_var("CANARY_VALUE", "correct-horse-battery-staple");
-      "correct-horse-battery-staple".to_string()
-    }
-  };
-}
-
 /// A instance of Rails Cookies Monster tests.
 ///
 /// * versions: The versions that will be checked during this run
 #[derive(Default)]
 pub struct RailsCookiesMonster {
+  pub(crate) _secret: String,
+  pub(crate) _canary: String,
   versions: HashSet<RailsVersion>,
   containers: HashSet<(String, String)>,
 }
 
 impl RailsCookiesMonster {
   pub fn new() -> Self {
+    let secret= match std::env::var("SECRET_KEY_BASE") {
+      Ok(value) => value,
+      Err(_) => {
+        std::env::set_var("SECRET_KEY_BASE", "rails-cookies-everywhere");
+        "rails-cookies-everywhere".to_string()
+      }
+    };
+    
+    let canary = match std::env::var("CANARY_VALUE") {
+      Ok(value) => value,
+      Err(_) => {
+        std::env::set_var("CANARY_VALUE", "correct-horse-battery-staple");
+        "correct-horse-battery-staple".to_string()
+      }
+    };
     debug!("Initialization:");
-    debug!(
-      "- Using SECRET_KEY_BASE: {}",
-      crate::SECRET_KEY_BASE.to_string()
-    );
-    debug!("- Using CANARY_VALUE: {}", crate::CANARY_VALUE.to_string());
+    debug!("- Using SECRET_KEY_BASE: {}", secret);
+    debug!("- Using CANARY_VALUE: {}", canary);
 
-    Self::default()
+    Self {
+      _secret: secret,
+      _canary: canary,
+      versions: HashSet::new(),
+      containers: HashSet::new()
+    }
   }
 
   /// Add version requirements to the instance.
@@ -254,8 +250,8 @@ impl RailsCookiesMonster {
           )]));
           let mut options = ContainerCreateOptions::new(&image_tag);
           options
-            .env(format!("SECRET_KEY_BASE={}", SECRET_KEY_BASE.to_string()))
-            .env(format!("CANARY_VALUE={}", CANARY_VALUE.to_string()))
+            .env(format!("SECRET_KEY_BASE={}", std::env::var("SECRET_KEY_BASE").unwrap()))
+            .env(format!("CANARY_VALUE={}", std::env::var("CANARY_VALUE").unwrap()))
             .exposed_ports(ExposedPorts(vec![(3000, "tcp".to_string())]))
             .host_config(host_config);
 
@@ -352,8 +348,7 @@ impl RailsCookiesMonster {
 
     let cookies: Vec<_> = responses
       .iter()
-      .map(|r| r.as_ref().unwrap())
-      .flatten()
+      .flat_map(|r| r.as_ref().unwrap())
       .cloned()
       .collect();
     cookies
