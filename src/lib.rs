@@ -1,18 +1,18 @@
-use std::collections::HashSet;
-use itertools::Itertools;
 use futures::future::join_all;
-use log::{error, info, debug, trace};
+use itertools::Itertools;
+use log::{debug, error, info, trace};
+use std::collections::HashSet;
 use urlencoding::decode;
 
 use reqwest::header::SET_COOKIE;
 use tokio::time::{sleep, Duration};
 
-use lazy_static::lazy_static;
-use semver::VersionReq;
 use dockworker::ContainerCreateOptions;
 use dockworker::ContainerHostConfig;
 use dockworker::ExposedPorts;
 use dockworker::PortBindings;
+use lazy_static::lazy_static;
+use semver::VersionReq;
 
 pub mod docker;
 pub mod rails;
@@ -41,20 +41,22 @@ lazy_static! {
   };
 }
 
-
 /// A instance of Rails Cookies Monster tests.
-/// 
+///
 /// * versions: The versions that will be checked during this run
 #[derive(Default)]
 pub struct RailsCookiesMonster {
   versions: HashSet<RailsVersion>,
-  containers: HashSet<(String, String)>
+  containers: HashSet<(String, String)>,
 }
 
 impl RailsCookiesMonster {
   pub fn new() -> Self {
     debug!("Initialization:");
-    debug!("- Using SECRET_KEY_BASE: {}", crate::SECRET_KEY_BASE.to_string());
+    debug!(
+      "- Using SECRET_KEY_BASE: {}",
+      crate::SECRET_KEY_BASE.to_string()
+    );
     debug!("- Using CANARY_VALUE: {}", crate::CANARY_VALUE.to_string());
 
     Self::default()
@@ -62,13 +64,19 @@ impl RailsCookiesMonster {
 
   /// Add version requirements to the instance.
   pub fn add_version_requirement(&mut self, rails_versions_requirements: &str) {
-    info!("Adding version requirement: {}", rails_versions_requirements);
+    info!(
+      "Adding version requirement: {}",
+      rails_versions_requirements
+    );
 
     let Ok(reqs) = VersionReq::parse(rails_versions_requirements) else {
-      return error!("-> Error: Cannot parse version requirement: {}", rails_versions_requirements);
+      return error!(
+        "-> Error: Cannot parse version requirement: {}",
+        rails_versions_requirements
+      );
     };
     let add_versions = crate::rails::versions::match_versions(&reqs);
-    
+
     self.versions.extend(add_versions);
   }
 
@@ -84,14 +92,14 @@ impl RailsCookiesMonster {
   }
 
   /// Returns a sorted vector of all Rails versions that this instance will check.
-  /// 
+  ///
   /// This method collects all the versions from the internal HashSet, sorts them,
   /// and returns them as a Vec<String>. The versions are sorted in ascending order
   /// according to their string representation.
-  /// 
+  ///
   /// # Returns
   /// * `Vec<String>` - A sorted vector containing all Rails versions to be checked
-  /// 
+  ///
   /// # Examples
   /// ```
   /// let mut monster = RailsCookiesMonster::new();
@@ -109,19 +117,22 @@ impl RailsCookiesMonster {
         (
           version.ruby.to_owned(),
           version.rails.to_string(),
-          version.patch.to_owned()
+          version.patch.to_owned(),
         )
       })
       .collect();
     rails_versions.sort();
     rails_versions
-  } 
+  }
 
   async fn cache_available_images(&self) {
     if docker::IMAGES.get().is_none() {
       debug!("Caching list of available Docker images");
       docker::cache_images().await;
-      debug!("-> Cached list of {} Docker images", docker::IMAGES.get().unwrap().len());
+      debug!(
+        "-> Cached list of {} Docker images",
+        docker::IMAGES.get().unwrap().len()
+      );
     } else {
       trace!("Docker images list already cached");
     }
@@ -143,28 +154,23 @@ impl RailsCookiesMonster {
     }
 
     info!("Building {} Ruby version images", missing_bases.len());
-    let tasks = missing_bases
-      .iter()
-      .cloned()
-      .map(|missing_base| {
-        tokio::spawn(async move {
-          info!("Building ruby-{} image", missing_base);
-          let task = docker::build::base(&missing_base).await;
-          match &task {
-            Ok(_) => Ok(()),
-            Err(error) => Err((missing_base, error.clone()))
-          }
-        })
-      });
-    
+    let tasks = missing_bases.iter().cloned().map(|missing_base| {
+      tokio::spawn(async move {
+        info!("Building ruby-{} image", missing_base);
+        let task = docker::build::base(&missing_base).await;
+        match &task {
+          Ok(_) => Ok(()),
+          Err(error) => Err((missing_base, error.clone())),
+        }
+      })
+    });
+
     let results = join_all(tasks).await;
     let errors: Vec<_> = results
       .into_iter()
-      .filter_map(|result| {
-        match result {
-          Ok(Err(e)) => Some(e),
-          _ => None,
-        }
+      .filter_map(|result| match result {
+        Ok(Err(e)) => Some(e),
+        _ => None,
       })
       .collect();
 
@@ -204,7 +210,7 @@ impl RailsCookiesMonster {
           let task = docker::build::version(&ruby_version, &rails_version, &patch).await;
           match &task {
             Ok(_) => Ok(()),
-            Err(error) => Err((rails_version, error.clone()))
+            Err(error) => Err((rails_version, error.clone())),
           }
         })
       });
@@ -212,11 +218,9 @@ impl RailsCookiesMonster {
     let results = join_all(tasks).await;
     let errors: Vec<_> = results
       .into_iter()
-      .filter_map(|result| {
-        match result {
-          Ok(Err(e)) => Some(e),
-          _ => None,
-        }
+      .filter_map(|result| match result {
+        Ok(Err(e)) => Some(e),
+        _ => None,
       })
       .collect();
 
@@ -235,27 +239,35 @@ impl RailsCookiesMonster {
       .cloned()
       .collect();
     versions_list.sort();
-    let ids = versions_list.iter()
+    let ids = versions_list
+      .iter()
       .cloned()
       .enumerate()
       .map(|(i, rails_version)| {
         tokio::spawn(async move {
           let image_tag = format!("rails-cookies-everywhere:rails-v{}", rails_version);
           let mut host_config = ContainerHostConfig::new();
-          host_config.port_bindings(PortBindings(vec![(3000, "tcp".to_string(), 3000 + i as u16)]));
+          host_config.port_bindings(PortBindings(vec![(
+            3000,
+            "tcp".to_string(),
+            3000 + i as u16,
+          )]));
           let mut options = ContainerCreateOptions::new(&image_tag);
-          options.env(format!("SECRET_KEY_BASE={}", SECRET_KEY_BASE.to_string()))
+          options
+            .env(format!("SECRET_KEY_BASE={}", SECRET_KEY_BASE.to_string()))
             .env(format!("CANARY_VALUE={}", CANARY_VALUE.to_string()))
             .exposed_ports(ExposedPorts(vec![(3000, "tcp".to_string())]))
             .host_config(host_config);
-          
+
           let container_tag = format!("rails-cookies-everywhere-rails-v{}", rails_version);
-          let container = docker::DOCKER.lock()
+          let container = docker::DOCKER
+            .lock()
             .await
             .create_container(Some(&container_tag), &options)
             .await
             .unwrap();
-          docker::DOCKER.lock()
+          docker::DOCKER
+            .lock()
             .await
             .start_container(&container.id)
             .await
@@ -266,23 +278,28 @@ impl RailsCookiesMonster {
 
     let results = join_all(ids).await;
     debug!("Started {} containers", results.len());
-    results.iter()
+    results
+      .iter()
       .filter_map(|r| r.as_ref().ok())
       .for_each(|(rails_version, container_id)| {
         debug!("- Container for {}: {}", &rails_version, &container_id);
-        self.containers.insert((rails_version.to_owned(), container_id.to_owned()));
+        self
+          .containers
+          .insert((rails_version.to_owned(), container_id.to_owned()));
       });
     ()
   }
 
   pub async fn query_containers(&self) -> Vec<(String, String)> {
-    let mut rails_versions: Vec<_> = self.containers
+    let mut rails_versions: Vec<_> = self
+      .containers
       .iter()
       .map(|(rails_version, _)| rails_version)
       .cloned()
       .collect();
     rails_versions.sort();
-    let cookies = rails_versions.iter()
+    let cookies = rails_versions
+      .iter()
       .cloned()
       .enumerate()
       .map(|(i, rails_version)| {
@@ -294,24 +311,34 @@ impl RailsCookiesMonster {
             sleep(Duration::from_millis(1000)).await;
             match reqwest::get(&url).await {
               Ok(response) => {
-                let headers = response.headers().get_all(SET_COOKIE)
+                let headers = response
+                  .headers()
+                  .get_all(SET_COOKIE)
                   .iter()
                   .map(|cookie| {
                     (
                       rails_version.clone(),
-                      decode(cookie.to_str().unwrap()).unwrap().to_string()
+                      decode(cookie.to_str().unwrap()).unwrap().to_string(),
                     )
                   })
                   .collect();
                 let body = response.text().await.unwrap();
-                assert_eq!(body, format!(r#"{{"version":"{}"}}"#, rails_version), "Wrong versin body: {}", body);
+                assert_eq!(
+                  body,
+                  format!(r#"{{"version":"{}"}}"#, rails_version),
+                  "Wrong versin body: {}",
+                  body
+                );
 
-                break headers
-              },
+                break headers;
+              }
               Err(err) => {
                 error!("Reqwest Error: {}", err);
                 if count > 10 {
-                  error!("Failed to query container {} after {} attempts", rails_version, count);
+                  error!(
+                    "Failed to query container {} after {} attempts",
+                    rails_version, count
+                  );
                   break vec![];
                 }
                 count += 1;
@@ -323,7 +350,6 @@ impl RailsCookiesMonster {
 
     let responses = join_all(cookies).await;
 
-
     let cookies: Vec<_> = responses
       .iter()
       .map(|r| r.as_ref().unwrap())
@@ -333,9 +359,9 @@ impl RailsCookiesMonster {
     cookies
   }
 
-
   pub async fn stop_containers(&self) {
-    let containers = self.containers
+    let containers = self
+      .containers
       .iter()
       .map(|(_, container_id)| container_id)
       .cloned()
@@ -345,26 +371,25 @@ impl RailsCookiesMonster {
 
   pub async fn drop_containers(containers: Vec<String>) {
     trace!("Dropping {} containers", containers.len());
-    let tasks = containers.iter()
-      .map(|container_id| {
-        let id_to_kill = container_id.clone();
-        tokio::spawn(async move {
-          // Do we really need to stop it if we remove it right after?
-          // docker::DOCKER.lock()
-          //   .await
-          //   .stop_container(&id_to_kill, Duration::from_secs(1))
-          //   .await
-          //   .unwrap();
-          // trace!("Stopped container {}", id_to_kill);
-          docker::DOCKER.lock()
-            .await
-            .remove_container(&id_to_kill, Some(true), Some(true), None)
-            .await
-            .unwrap();
-          trace!("- Removed container: {}", id_to_kill);
-        })
-      });
+    let tasks = containers.iter().map(|container_id| {
+      let id_to_kill = container_id.clone();
+      tokio::spawn(async move {
+        // Do we really need to stop it if we remove it right after?
+        // docker::DOCKER.lock()
+        //   .await
+        //   .stop_container(&id_to_kill, Duration::from_secs(1))
+        //   .await
+        //   .unwrap();
+        // trace!("Stopped container {}", id_to_kill);
+        docker::DOCKER
+          .lock()
+          .await
+          .remove_container(&id_to_kill, Some(true), Some(true), None)
+          .await
+          .unwrap();
+        trace!("- Removed container: {}", id_to_kill);
+      })
+    });
     let _ = join_all(tasks).await;
   }
-
 }

@@ -1,5 +1,4 @@
 use base64::prelude::*;
-use rails_cookie_parser::HashDigest;
 use rails_cookie_parser::ParseCookieError;
 use rails_cookie_parser::RailsCookieParser;
 use serde::{Deserialize, Serialize};
@@ -18,7 +17,8 @@ pub struct RailsCookie {
 }
 
 pub fn decipher_cookie(rails_version: &str, cookie: &str) -> Result<String, ParseCookieError> {
-  let version = rails_version.split(".")
+  let version = rails_version
+    .split(".")
     .map(|x| x.parse().unwrap())
     .collect::<Vec<u8>>();
   let cookie_parser = match version[..] {

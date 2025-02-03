@@ -1,12 +1,12 @@
 use lazy_static::lazy_static;
-use semver::VersionReq;
 use semver::Version;
+use semver::VersionReq;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct RailsVersion {
   pub ruby: String,
   pub rails: Version,
-  pub patch: String
+  pub patch: String,
 }
 
 impl RailsVersion {
@@ -14,7 +14,7 @@ impl RailsVersion {
     Self {
       ruby: ruby.to_string(),
       rails: Version::new(major, minor, patch),
-      patch: patchfile.to_string()
+      patch: patchfile.to_string(),
     }
   }
 }
@@ -68,9 +68,7 @@ lazy_static! {
 pub fn match_versions(requirement: &VersionReq) -> Vec<RailsVersion> {
   RAILS_VERSIONS
     .iter()
-    .filter(|version| {
-      requirement.matches(&version.rails)
-    })
+    .filter(|version| requirement.matches(&version.rails))
     .cloned()
     .collect()
 }

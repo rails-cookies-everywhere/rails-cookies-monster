@@ -1,11 +1,11 @@
 use std::collections::HashSet;
-use std::sync::OnceLock;
 use std::sync::Arc;
+use std::sync::OnceLock;
 
-use lazy_static::lazy_static;
-use tokio::sync::Mutex;
 use dockworker::Docker;
+use lazy_static::lazy_static;
 use log::error;
+use tokio::sync::Mutex;
 
 pub(crate) mod build;
 
@@ -19,13 +19,13 @@ lazy_static! {
 pub(crate) async fn cache_images() {
   let mut images = list_images().await;
   images.sort();
-  let Ok(_) =  IMAGES.set(images.into_iter().collect()) else {
+  let Ok(_) = IMAGES.set(images.into_iter().collect()) else {
     error!("Error: Failed to cache available Docker images");
     return;
   };
 }
 
-async fn list_images() -> Vec<String>{  
+async fn list_images() -> Vec<String> {
   DOCKER
     .lock()
     .await
@@ -34,7 +34,10 @@ async fn list_images() -> Vec<String>{
     .unwrap()
     .iter()
     .filter(|image| {
-      image.RepoTags.iter().any(|tag| tag.starts_with("rails-cookies-everywhere:"))
+      image
+        .RepoTags
+        .iter()
+        .any(|tag| tag.starts_with("rails-cookies-everywhere:"))
     })
     .flat_map(|image| image.RepoTags.iter().cloned())
     .collect()

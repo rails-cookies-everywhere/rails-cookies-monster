@@ -1,7 +1,7 @@
 use std::env;
 
-use rails_cookies_monster::RailsCookiesMonster;
 use rails_cookies_monster::rails;
+use rails_cookies_monster::RailsCookiesMonster;
 
 #[tokio::main]
 async fn main() {
@@ -39,20 +39,16 @@ async fn main() {
     std::process::exit(1);
   }
   monster.start_containers().await;
-  
+
   let cookies = monster.query_containers().await;
   for (version, cookie) in cookies {
     println!("Version: {}", version);
-    let (cookie_name, cookie_value) = cookie.split_once(';')
-      .unwrap()
-      .0
-      .split_once('=')
-      .unwrap();
+    let (cookie_name, cookie_value) = cookie.split_once(';').unwrap().0.split_once('=').unwrap();
     println!(" => COOKIES: _{}", cookie_name);
-    let message = rails::decipher_cookie(&version, &cookie_value).expect("Could not decipher cookie");
+    let message =
+      rails::decipher_cookie(&version, &cookie_value).expect("Could not decipher cookie");
     println!(" => MESSAGE: _{}", message);
   }
 
   monster.stop_containers().await;
-
 }
