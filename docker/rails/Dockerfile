@@ -82,6 +82,7 @@ FROM create-app AS setup-app
 WORKDIR /app/cookie-monster
 
 RUN sed -i Gemfile -e 's|gem "rails", "~> |gem "rails", "|'
+RUN sed -i config/environments/production.rb -e 's|config.force_ssl = true|# config.force_ssl = true|'
 RUN bundle install
 COPY rails_patch/rails_controller.rb /app/cookie-monster/app/controllers/monsters_controller.rb
 COPY rails_patch/rails_routes.rb /app/cookie-monster/config/routes.rb
