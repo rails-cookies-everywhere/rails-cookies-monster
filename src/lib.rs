@@ -328,8 +328,7 @@ impl RailsCookiesMonster {
 
                 break headers;
               }
-              Err(err) => {
-                error!("Reqwest Error: {}", err);
+              Err(_err) => {
                 if count > 10 {
                   error!(
                     "Failed to query container {} after {} attempts",

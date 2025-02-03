@@ -2,7 +2,7 @@ use std::env;
 
 use rails_cookies_monster::rails;
 use rails_cookies_monster::RailsCookiesMonster;
-use log::trace;
+use log::info;
 
 #[tokio::main]
 async fn main() {
@@ -58,12 +58,12 @@ async fn main() {
       "encrypted" => {
         let message = message.strip_prefix('"').unwrap().strip_suffix('"').unwrap();
         assert_eq!(canary, message, "Decrypted cookie does not contain the canary value: {} (Version {}, canary: {})", message, version, canary);
-        trace!("Version {}, found canary in cookie  {}!", version, cookie_name);
+        info!("Version {}, found canary in cookie  {}!", version, cookie_name);
       },
       "_cookie_monster_session" => {
         let message = message.split('"').nth(7).unwrap();
         assert_eq!(canary, message, "Decrypted session does not contain the canary value: {} (Version {}, canary: {})", message, version, canary);
-        trace!("Version {}, found canary in session {}!", version, cookie_name);
+        info!("Version {}, found canary in session {}!", version, cookie_name);
       },
       _ => { unimplemented!() }
     }
