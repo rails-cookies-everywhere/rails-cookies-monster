@@ -31,14 +31,14 @@ pub struct RailsCookiesMonster {
 
 impl RailsCookiesMonster {
   pub fn new() -> Self {
-    let secret= match std::env::var("SECRET_KEY_BASE") {
+    let secret = match std::env::var("SECRET_KEY_BASE") {
       Ok(value) => value,
       Err(_) => {
         std::env::set_var("SECRET_KEY_BASE", "rails-cookies-everywhere");
         "rails-cookies-everywhere".to_string()
       }
     };
-    
+
     let canary = match std::env::var("CANARY_VALUE") {
       Ok(value) => value,
       Err(_) => {
@@ -54,7 +54,7 @@ impl RailsCookiesMonster {
       _secret: secret,
       _canary: canary,
       versions: HashSet::new(),
-      containers: HashSet::new()
+      containers: HashSet::new(),
     }
   }
 
@@ -250,8 +250,14 @@ impl RailsCookiesMonster {
           )]));
           let mut options = ContainerCreateOptions::new(&image_tag);
           options
-            .env(format!("SECRET_KEY_BASE={}", std::env::var("SECRET_KEY_BASE").unwrap()))
-            .env(format!("CANARY_VALUE={}", std::env::var("CANARY_VALUE").unwrap()))
+            .env(format!(
+              "SECRET_KEY_BASE={}",
+              std::env::var("SECRET_KEY_BASE").unwrap()
+            ))
+            .env(format!(
+              "CANARY_VALUE={}",
+              std::env::var("CANARY_VALUE").unwrap()
+            ))
             .exposed_ports(ExposedPorts(vec![(3000, "tcp".to_string())]))
             .host_config(host_config);
 
@@ -268,7 +274,7 @@ impl RailsCookiesMonster {
             .start_container(&container.id)
             .await
             .unwrap();
-          return (rails_version, container.id);
+          (rails_version, container.id)
         })
       });
 
@@ -283,7 +289,6 @@ impl RailsCookiesMonster {
           .containers
           .insert((rails_version.to_owned(), container_id.to_owned()));
       });
-    ()
   }
 
   pub async fn query_containers(&self) -> Vec<(String, String)> {
