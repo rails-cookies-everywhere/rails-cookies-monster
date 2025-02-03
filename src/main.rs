@@ -1,8 +1,7 @@
 use std::env;
-use std::process::Command;
-use tokio::task;
 
 use rails_cookies_monster::RailsCookiesMonster;
+use rails_cookies_monster::rails;
 
 #[tokio::main]
 async fn main() {
@@ -43,102 +42,17 @@ async fn main() {
   
   let cookies = monster.query_containers().await;
   for (version, cookie) in cookies {
-    println!("{} => {}", version, cookie);
+    println!("Version: {}", version);
+    let (cookie_name, cookie_value) = cookie.split_once(';')
+      .unwrap()
+      .0
+      .split_once('=')
+      .unwrap();
+    println!(" => COOKIES: _{}", cookie_name);
+    let message = rails::decipher_cookie(&version, &cookie_value).expect("Could not decipher cookie");
+    println!(" => MESSAGE: _{}", message);
   }
 
   monster.stop_containers().await;
 
 }
-
-// // #[tokio::main]
-// async fn old_main() {
-  
-
-
-//   println!("\n********************************************************************************");
-//   println!("***** 2. Running server container **********************************************");
-//   // Run the Docker container in a separate thread
-//   let container_id = task::spawn_blocking(move || {
-//     let secret = &format!("SECRET_KEY_BASE={}", &SECRET_KEY_BASE.to_string());
-//     let canary = &format!("CANARY_VALUE={}", &CANARY_VALUE.to_string());
-//     let run_output = Command::new("docker")
-//       .arg("run")
-//       .arg("-d")
-//       .args(&["-e", secret])
-//       .args(&["-e", canary])
-//       .args(&["-p", "3000:3000"])
-//       .arg(&image_tag)
-//       .output()
-//       .expect("Failed to run Docker container");
-//     let container_id = String::from_utf8(run_output.stdout)
-//       .expect("Failed to parse Docker run output")
-//       .trim()
-//       .to_string();
-//     println!("-> Docker run container ID: {:?}", container_id);
-//     container_id
-//   })
-//   .await
-//   .expect("Failed to spawn Docker run task");
-
-//   println!("\n********************************************************************************");
-//   println!("***** 3. Querying server container *********************************************");
-//   // Query the running container in the main thread
-//   tokio::time::sleep(Duration::from_secs(5)).await; // Wait for the container to be fully up
-//   let query_output = Command::new("curl")
-//     .arg("http://localhost:3000")
-//     .arg("-v")
-//     .output()
-//     .expect("Failed to query Docker container");
-//   let output = String::from_utf8(query_output.stderr).expect("Failed to parse Curl output");
-
-//   let cookies: Vec<(String, String)> = output
-//     .lines()
-//     .filter(|line| line.starts_with("< set-cookie:"))
-//     .map(|line| {
-//       return line
-//         .strip_prefix("< set-cookie: ")
-//         .unwrap()
-//         .split_once(';')
-//         .unwrap()
-//         .0
-//         .split_once('=')
-//         .unwrap();
-//     })
-//     .map(|(key, val)| return (key.to_owned(), decode(val).unwrap().to_string()))
-//     .collect();
-//   println!("-> Extracted {} cookies", cookies.len());
-
-//   println!("\n********************************************************************************");
-//   println!("***** 4. Cleaning up container *************************************************");
-//   let _stop_output = Command::new("docker")
-//     .arg("stop")
-//     .arg(&container_id)
-//     .output()
-//     .expect("Failed to stop Docker container");
-
-//   let _rm_output = Command::new("docker")
-//     .args(&["rm", &container_id])
-//     .output()
-//     .expect("Failed to remove Docker container");
-
-//   println!("\n********************************************************************************");
-//   println!("***** 5. Checking cookies decyphering ******************************************");
-//   cookies.
-//     iter().
-//     // filter(|(key, _)| *key != "regular" && *key != "signed" ).//"_cookie_monster_session" ).
-//     for_each(|(key, value)| {
-//       if *key == "signed" { return; }
-//       if *key == "regular"{
-//         println!("Cookie:\n -> KEY: {}\n -> VAL: {}", key, value);
-//         return;
-//       }
-//       println!("Cookie:\n -> KEY: {}", key);
-//       let deciphered = rails::decipher_cookie(rails_version_tag, &value).expect("Could not decipher cookie");
-//       println!(" -> VAL: {}", deciphered);
-//       if deciphered.contains(&CANARY_VALUE.to_string()) {
-//         println!(" -> Decyphering is correct!")
-//       } else {
-//         println!(" -> Decyphering is incorrect!")
-//       }
-//     });
-// }

@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use itertools::Itertools;
 use futures::future::join_all;
 use log::{error, info, debug, trace};
+use urlencoding::decode;
 
 use reqwest::header::SET_COOKIE;
 use tokio::time::{sleep, Duration};
@@ -293,17 +294,22 @@ impl RailsCookiesMonster {
             sleep(Duration::from_millis(1000)).await;
             match reqwest::get(&url).await {
               Ok(response) => {
-                break response.headers().get_all(SET_COOKIE)
+                let headers = response.headers().get_all(SET_COOKIE)
                   .iter()
                   .map(|cookie| {
                     (
                       rails_version.clone(),
-                      cookie.to_str().unwrap().to_owned()
+                      decode(cookie.to_str().unwrap()).unwrap().to_string()
                     )
                   })
                   .collect();
+                let body = response.text().await.unwrap();
+                assert_eq!(body, format!(r#"{{"version":"{}"}}"#, rails_version), "Wrong versin body: {}", body);
+
+                break headers
               },
-              Err(_) => {
+              Err(err) => {
+                error!("Reqwest Error: {}", err);
                 if count > 10 {
                   error!("Failed to query container {} after {} attempts", rails_version, count);
                   break vec![];

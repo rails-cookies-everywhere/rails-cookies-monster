@@ -18,13 +18,12 @@ pub struct RailsCookie {
 }
 
 pub fn decipher_cookie(rails_version: &str, cookie: &str) -> Result<String, ParseCookieError> {
-  let cookie_parser = match rails_version {
-    "7.0.0" => RailsCookieParser::new(
-      &std::env::var("SECRET_KEY_BASE").unwrap(),
-      "authenticated encrypted cookie",
-      1000,
-      HashDigest::Sha256,
-    ),
+  let version = rails_version.split(".")
+    .map(|x| x.parse().unwrap())
+    .collect::<Vec<u8>>();
+  let cookie_parser = match version[..] {
+    [6, _, _] => RailsCookieParser::default_rails6(),
+    [7, _, _] => RailsCookieParser::default_rails7(),
     _ => RailsCookieParser::default(),
   };
 
