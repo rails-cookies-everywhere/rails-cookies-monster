@@ -22,3 +22,4 @@ Cargo.lock
 
 # If you've got a copy of Rails running locally
 /rails/
+cookies.txt

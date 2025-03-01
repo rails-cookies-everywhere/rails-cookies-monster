@@ -23,8 +23,8 @@ use rails::versions::RailsVersion;
 /// * versions: The versions that will be checked during this run
 #[derive(Default)]
 pub struct RailsCookiesMonster {
-  pub(crate) _secret: String,
-  pub(crate) _canary: String,
+  pub secret: String,
+  pub canary: String,
   versions: HashSet<RailsVersion>,
   containers: HashSet<(String, String)>,
 }
@@ -51,8 +51,8 @@ impl RailsCookiesMonster {
     debug!("- Using CANARY_VALUE: {}", canary);
 
     Self {
-      _secret: secret,
-      _canary: canary,
+      secret,
+      canary,
       versions: HashSet::new(),
       containers: HashSet::new(),
     }

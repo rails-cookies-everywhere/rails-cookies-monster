@@ -5,6 +5,10 @@ Rails Cookies Monster is a comprehensive testing suite designed to validate Rail
 
 It uses Docker under the hood to run out-of-the-box Rails apps and capture their cookies.
 
+## Goals
+
+The aim is to handle as many Rails versions as possible, maybe down to 4 or 5. When this goal is attained, the versioning will follow the Rails versioning, and be updated with each new Rails version.
+
 ## Quick Start
 ```shell
 # Clone and run with default settings
@@ -69,8 +73,8 @@ Currently implemented features:
 - [x] Use the Docker socket to build the images instead of CLI.
 - [x] Use the Docker socket to run the container(s) on ports starting from 3000.
 - [x] Use [reqwest](https://github.com/seanmonstar/reqwest) to retrieve the cookies from running containers.
-- [ ] Pass the cookies to a [rust cookies parser library](https://github.com/rails-cookies-everywhere/rails-cookies-rust).
-- [ ] Check the cookie against the canary value.
+- [x] (Commented) Pass the cookies to a [rust cookies parser library](https://github.com/rails-cookies-everywhere/rails-cookies-rust).
+- [x] (Commented) Check the cookie against the canary value.
 - [ ] Do more with the cookies, either pass them to a FFI or a binary?
 
 ## Planned Features
