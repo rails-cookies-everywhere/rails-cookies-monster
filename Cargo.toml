@@ -36,5 +36,11 @@ tokio-util = "0.7.13"
 itertools = "0.14.0"
 reqwest = "0.12.12"
 
+# Security advisory:
+# Some AES functions may panic when overflow checking is enabled in ring
+ring = "0.17.12"
+[dev-dependencies]
+ring = "0.17.12"
+
 [build-dependencies]
 tar = "0.4.44"
