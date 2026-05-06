@@ -1,6 +1,6 @@
 [package]
 name = "rails-cookies-monster"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 
 [[bin]]
@@ -37,8 +37,9 @@ itertools = "0.14.0"
 reqwest = "0.12.12"
 
 # Security advisory:
-# Some AES functions may panic when overflow checking is enabled in ring
-ring = "0.17.12"
+# rust-openssl has undefined behavior in X509Ref::ocsp_responders for certificates with non-UTF-8 OCSP URLs
+openssl = "0.10.79"
+
 [dev-dependencies]
 ring = "0.17.12"
 
